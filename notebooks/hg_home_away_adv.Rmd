@@ -1,0 +1,441 @@
+---
+title: "NHL - Is there a home advantage"
+output: html_notebook
+---
+```{r}
+library(tidyverse)
+
+outcomes_11_12 <- read_csv('../data/outcomes_11_12.csv', show_col_types = F)
+
+outcomes_13 <- read_csv('../data/outcomes_13.csv', show_col_types = F)
+
+outcomes_13_14 <- read_csv('../data/outcomes_13_14.csv', show_col_types = F)
+
+outcomes_14_15 <- read_csv('../data/outcomes_14_15.csv', show_col_types = F)
+
+outcomes_15_16 <- read_csv('../data/outcomes_15_16.csv', show_col_types = F)
+
+outcomes_16_17 <- read_csv('../data/outcomes_16_17.csv', show_col_types = F)
+
+outcomes_17_18 <- read_csv('../data/outcomes_17_18.csv', show_col_types = F)
+
+outcomes_18_19 <- read_csv('../data/outcomes_18_19.csv', show_col_types = F)
+
+outcomes_19_20 <- read_csv('../data/outcomes_19_20.csv', show_col_types = F)
+
+outcomes_20_21 <- read_csv('../data/outcomes_20_21.csv', show_col_types = F)
+
+outcomes_21_22 <- read_csv('../data/outcomes_21_22.csv', show_col_types = F)
+
+```
+function to clean the data
+```{r}
+data_cleaning <- function(dataframe) {
+  
+  dataframe <- dataframe %>% 
+  select(Game) %>% 
+  separate(Game, c('date', 'game'), ' - ') %>% 
+  separate(game, c('away', 'home'), ', ')
+
+  away_scores <- str_split_i(dataframe$away, ' ', -1)
+  
+  home_scores <- str_split_i(dataframe$home, ' ', -1)
+  
+  dataframe <- dataframe %>% 
+    separate(away, c('away', 'away_score'), ' [0-9]') %>% 
+    separate(home, c('home', 'home_score'), ' [0-9]')
+  
+  dataframe$away_score <- away_scores
+  
+  dataframe$home_score <- home_scores
+  
+  dataframe$away_score <- as.numeric(dataframe$away_score)
+  
+  dataframe$home_score <- as.numeric(dataframe$home_score)
+  
+  dataframe$date <- lubridate::as_date(dataframe$date)
+  
+  dataframe <- dataframe %>% 
+    mutate(
+      home_win = case_when(
+        home_score - away_score > 0 ~ 1,
+        home_score - away_score < 0 ~ 0
+      )
+        )
+  
+  dataframe <- dataframe %>% 
+    mutate(
+      away_win = case_when(
+        home_score - away_score > 0 ~ 0,
+        home_score - away_score < 0 ~ 1
+      )
+        )
+  
+  dataframe <- dataframe %>% 
+    mutate(home_elo = 0, away_elo = 0)
+  
+  dataframe <- dataframe %>% 
+    arrange(date)
+  
+  return(dataframe)
+}
+```
+
+function to simulate the elo
+```{r}
+elo_simming <- function(dataframe, season, updating_elo) {
+  for (i in 1:nrow(dataframe)){
+  
+    dataframe$home_elo[i] <- updating_elo %>% 
+           filter(team == dataframe$home[i]) %>% 
+           pull(season)
+  
+  dataframe$away_elo[i] <- updating_elo %>% 
+           filter(team == dataframe$away[i]) %>% 
+           pull(season)
+  
+  home_index = which(updating_elo$team == dataframe$home[i])
+  away_index = which(updating_elo$team == dataframe$away[i])
+  
+  updating_elo[[season]][home_index] <- dataframe$home_elo[i] + 32 * (
+               dataframe$home_win[i] - (
+                 1 / (
+                   1 +10 ^ (
+                     (dataframe$away_elo[i] - dataframe$home_elo[i]) / 400
+                   )
+                 )
+               )
+             )
+  
+  updating_elo[[season]][away_index] <-dataframe$away_elo[i] + 32 * (
+               dataframe$away_win[i] - (
+                 1 / (
+                   1 +10 ^ (
+                     (dataframe$home_elo[i] - dataframe$away_elo[i]) / 400
+                   )
+                 )
+               )
+             )
+  }
+  return(list(updating_elo, dataframe))
+}
+```
+
+```{r}
+updating_elo <- data_cleaning(outcomes_21_22) %>% 
+  select(home) %>% 
+  distinct() %>% 
+  rename(team = home) %>% 
+  mutate(season_start_elo_11_12 = 1000, season_end_elo_11_12 = 1000)
+```
+
+simming elo for 11-12
+```{r}
+outcomes_11_12 <- data_cleaning(outcomes_11_12)
+```
+
+```{r}
+test <- elo_simming(outcomes_11_12, 'season_end_elo_11_12', updating_elo)
+```
+
+```{r}
+outcomes_11_12 <- test[[2]]
+
+updating_elo <- test[[1]]
+```
+
+```{r}
+updating_elo <- updating_elo %>% 
+  mutate(season_start_elo_13 = .5 * season_end_elo_11_12 + 1000 * (1 - .5), season_end_elo_13 = season_start_elo_13) 
+```
+
+simming elo for 13
+```{r}
+outcomes_13 <- data_cleaning(outcomes_13)
+```
+
+```{r}
+test <- elo_simming(outcomes_13, 'season_end_elo_13', updating_elo)
+```
+
+```{r}
+outcomes_13 <- test[[2]]
+
+updating_elo <- test[[1]]
+```
+
+```{r}
+updating_elo <- updating_elo %>% 
+  mutate(season_start_elo_13_14 = .5 * season_end_elo_13 + 1000 * (1 - .5), season_end_elo_13_14 = season_start_elo_13_14)
+```
+
+simming elo for 13-14
+```{r}
+outcomes_13_14 <- data_cleaning(outcomes_13_14)
+```
+
+```{r}
+test <- elo_simming(outcomes_13_14, 'season_end_elo_13_14', updating_elo)
+```
+
+```{r}
+outcomes_13_14 <- test[[2]]
+
+updating_elo <- test[[1]]
+```
+
+```{r}
+updating_elo <- updating_elo %>% 
+  mutate(season_start_elo_14_15 = .5 * season_end_elo_13_14 + 1000 * (1 - .5), season_end_elo_14_15 = season_start_elo_14_15)
+```
+
+simming elo for 14-15
+```{r}
+outcomes_14_15 <- data_cleaning(outcomes_14_15)
+```
+
+```{r}
+test <- elo_simming(outcomes_14_15, 'season_end_elo_14_15', updating_elo)
+```
+
+```{r}
+outcomes_14_15 <- test[[2]]
+
+updating_elo <- test[[1]]
+```
+
+```{r}
+updating_elo <- updating_elo %>% 
+  mutate(season_start_elo_15_16 = .5 * season_end_elo_14_15 + 1000 * (1 - .5), season_end_elo_15_16 = season_start_elo_15_16)
+```
+
+Simming for elo during the 15-16 season
+```{r}
+outcomes_15_16 <- data_cleaning(outcomes_15_16)
+```
+
+```{r}
+test <- elo_simming(outcomes_15_16, 'season_end_elo_15_16', updating_elo)
+```
+
+```{r}
+outcomes_15_16 <- test[[2]]
+
+updating_elo <- test[[1]]
+```
+
+```{r}
+updating_elo <- updating_elo %>% 
+  mutate(season_start_elo_16_17 = .5 * season_end_elo_15_16 + 1000 * (1 - .5), season_end_elo_16_17 = season_start_elo_16_17)
+```
+
+Simming for elo during 16-17
+```{r}
+outcomes_16_17 <- data_cleaning(outcomes_16_17)
+```
+
+```{r}
+test <- elo_simming(outcomes_16_17, 'season_end_elo_16_17', updating_elo)
+```
+
+```{r}
+outcomes_16_17 <- test[[2]]
+
+updating_elo <- test[[1]]
+```
+
+```{r}
+updating_elo <- updating_elo %>% 
+  mutate(season_start_elo_17_18 = .5 * season_end_elo_16_17 + 1000 * (1 - .5), season_end_elo_17_18 = season_start_elo_17_18)
+```
+
+Simming for elo during 17-18
+```{r}
+outcomes_17_18 <- data_cleaning(outcomes_17_18)
+```
+
+```{r}
+test <- elo_simming(outcomes_17_18, 'season_end_elo_17_18', updating_elo)
+```
+
+```{r}
+outcomes_17_18 <- test[[2]]
+
+updating_elo <- test[[1]]
+```
+
+```{r}
+updating_elo <- updating_elo %>% 
+  mutate(season_start_elo_18_19 = .5 * season_end_elo_17_18 + 1000 * (1 - .5), season_end_elo_18_19 = season_start_elo_18_19)
+```
+
+simming for elo during 18-19
+```{r}
+outcomes_18_19 <- data_cleaning(outcomes_18_19)
+```
+
+```{r}
+test <- elo_simming(outcomes_18_19, 'season_end_elo_18_19', updating_elo)
+```
+
+```{r}
+outcomes_18_19 <- test[[2]]
+
+updating_elo <- test[[1]]
+```
+
+```{r}
+updating_elo <- updating_elo %>% 
+  mutate(season_start_elo_19_20 = .5 * season_end_elo_18_19 + 1000 * (1 - .5), season_end_elo_19_20 = season_start_elo_19_20)
+```
+
+simming for elo during 19-20
+```{r}
+outcomes_19_20 <- data_cleaning(outcomes_19_20)
+```
+
+```{r}
+test <- elo_simming(outcomes_19_20, 'season_end_elo_19_20', updating_elo)
+```
+
+```{r}
+outcomes_19_20 <- test[[2]]
+
+updating_elo <- test[[1]]
+```
+
+```{r}
+updating_elo <- updating_elo %>% 
+  mutate(season_start_elo_20_21 = .5 * season_end_elo_19_20 + 1000 * (1 - .5), season_end_elo_20_21 = season_start_elo_20_21)
+```
+
+simming for elo during 20_21
+```{r}
+outcomes_20_21 <- data_cleaning(outcomes_20_21)
+```
+
+```{r}
+test <- elo_simming(outcomes_20_21, 'season_end_elo_20_21', updating_elo)
+```
+
+```{r}
+outcomes_20_21 <- test[[2]]
+
+updating_elo <- test[[1]]
+```
+
+```{r}
+updating_elo <- updating_elo %>% 
+  mutate(season_start_elo_21_22 = .5 * season_end_elo_20_21 + 1000 * (1 - .5), season_end_elo_21_22 = season_start_elo_21_22)
+```
+
+simming for elo during 21_22
+```{r}
+outcomes_21_22 <- data_cleaning(outcomes_21_22)
+```
+
+```{r}
+test <- elo_simming(outcomes_21_22, 'season_end_elo_21_22', updating_elo)
+```
+
+```{r}
+outcomes_21_22 <- test[[2]]
+
+updating_elo <- test[[1]]
+```
+
+```{r}
+updating_elo <- updating_elo %>% 
+  mutate(season_start_elo_22_23 = .5 * season_end_elo_21_22 + 1000 * (1 - .5), season_end_elo_22_23 = season_start_elo_22_23)
+```
+
+```{r}
+outcomes_11_12 %>% 
+  saveRDS(file = '../data/outcomes_11_12.rds')
+
+outcomes_13 %>% 
+  saveRDS(file = '../data/outcomes_13.rds')
+
+outcomes_13_14 %>% 
+  saveRDS(file = '../data/outcomes_13_14.rds')
+
+outcomes_14_15 %>% 
+  saveRDS(file = '../data/outcomes_14_15.rds')
+
+outcomes_15_16 %>% 
+  saveRDS(file = '../data/outcomes_15_16.rds')
+
+outcomes_16_17 %>% 
+  saveRDS(file = '../data/outcomes_16_17.rds')
+
+outcomes_17_18 %>% 
+  saveRDS(file = '../data/outcomes_17_18.rds')
+
+outcomes_18_19 %>% 
+  saveRDS(file = '../data/outcomes_18_19.rds')
+
+outcomes_19_20 %>% 
+  saveRDS(file = '../data/outcomes_19_20.rds')
+
+outcomes_20_21 %>% 
+  saveRDS(file = '../data/outcomes_20_21.rds')
+
+outcomes_21_22 %>% 
+  saveRDS(file = '../data/outcomes_21_22.rds')
+
+updating_elo %>% 
+  saveRDS(file = '../data/updating_elo.rds')
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+for (i in 1:nrow(outcomes)){
+  outcomes$home_elo[i] <- updating_elo %>% 
+           filter(team == outcomes$home[i]) %>% 
+           pull(season_end_elo)
+  
+  outcomes$away_elo[i] <- updating_elo %>% 
+           filter(team == outcomes$away[i]) %>% 
+           pull(season_end_elo)
+  
+  home_index = which(updating_elo$team == outcomes$home[i])
+  away_index = which(updating_elo$team == outcomes$away[i])
+  
+  updating_elo$season_end_elo[home_index] <- outcomes$home_elo[i] + 32 * (
+               outcomes$home_win[i] - (
+                 1 / (
+                   1 +10 ^ (
+                     (outcomes$away_elo[i] - outcomes$home_elo[i]) / 400
+                   )
+                 )
+               )
+             )
+  
+  updating_elo$season_end_elo[away_index] <-outcomes$away_elo[i] + 32 * (
+               outcomes$away_win[i] - (
+                 1 / (
+                   1 +10 ^ (
+                     (outcomes$home_elo[i] - outcomes$away_elo[i]) / 400
+                   )
+                 )
+               )
+             )
+}
+```
+
