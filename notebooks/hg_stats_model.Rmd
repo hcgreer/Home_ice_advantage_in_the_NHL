@@ -7,16 +7,17 @@ output: html_notebook
 library(tidyverse)
 outcomes_21_22 <- readRDS(file = '../data/outcomes_21_22.rds')
 
+outcomes_20_21 <- readRDS(file = '../data/outcomes_20_21.rds')
+
 updating_elo <- readRDS(file = '../data/updating_elo.rds')
 ```
 
 ```{r}
 outcomes_21_22 <- outcomes_21_22 %>% 
   mutate(elo_diff = home_elo - away_elo, goal_diff = home_score - away_score)
-```
 
-```{r}
-outcomes_21_22$elo_diff <- format(outcomes_21_22$elo_diff, scientific = F)
+outcomes_20_21 <- outcomes_20_21 %>% 
+  mutate(elo_diff = home_elo - away_elo, goal_diff = home_score - away_score)
 ```
 
 ```{r}
@@ -34,10 +35,45 @@ outcomes_21_22 <- outcomes_21_22 %>%
   )
 ```
 
+```{r}
+outcomes_21_22 <- outcomes_21_22 %>% 
+  mutate(matchup = factor(matchup))
+```
 
 ```{r}
-simple_regression_model <- lm(goal_diff ~ matchup, data = outcomes_21_22)
+simple_regression_model <- lm(goal_diff ~ relevel(matchup, ref = 'even'), data = outcomes_21_22)
 
 summary(simple_regression_model)
+```
+
+```{r}
+outcomes_21_22 <- outcomes_21_22 %>% 
+  mutate(matchup = factor(elo_diff))
+
+
+simple_regression_model <- lm(goal_diff ~ elo_diff, data = outcomes_21_22)
+
+summary(simple_regression_model)
+```
+```{r}
+logistic_regression <- glm(home_win ~ elo_diff, data = outcomes_21_22, family = 'binomial')
+
+summary(logistic_regression)
+```
+
+```{r}
+outcomes_20_21 <- outcomes_20_21 %>% 
+  mutate(matchup = factor(elo_diff))
+
+
+simple_regression_model <- lm(goal_diff ~ elo_diff, data = outcomes_20_21)
+
+summary(simple_regression_model)
+```
+
+```{r}
+logistic_regression <- glm(home_win ~ elo_diff, data = outcomes_20_21, family = 'binomial')
+
+summary(logistic_regression)
 ```
 
