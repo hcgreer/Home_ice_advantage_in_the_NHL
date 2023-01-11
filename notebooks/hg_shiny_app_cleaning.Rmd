@@ -1,0 +1,235 @@
+---
+title: "shiny app data cleaning"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+outcomes <- readRDS(file = '../data/outcomes.rds')
+```
+
+```{r}
+teams <- outcomes %>% 
+  select(home) %>% 
+  distinct() %>% 
+  arrange(home) %>% 
+  pull()
+```
+
+```{r}
+dataframe <- tribble(~team, ~home_score, ~away_score, ~home_shots, ~away_shots, ~home_win, ~away_win, ~home_loss, ~away_loss, 'a', 1, 2, 3, 4, 5, 6, 7, 8)
+```
+
+```{r}
+every_year <- function(outcomes, nhl_team) {
+
+  test <- tribble(~team, ~home_score, ~away_score, ~home_shots, ~away_shots, ~home_win, ~away_win, ~home_loss, ~away_loss, 'a', 1, 2, 3, 4, 5, 6, 7, 8)
+  
+  test['team'] <- outcomes %>% 
+    select(home) %>% 
+    distinct() %>% 
+    filter(home == nhl_team) %>% 
+    pull()
+  
+  test['home_score'] <- outcomes %>% 
+    filter(home == nhl_team) %>% 
+    select(home, home_score) %>% 
+    summarise(home_score = sum(home_score)) %>% 
+    pull()
+  
+  test['away_score'] <- outcomes %>% 
+    filter(away == nhl_team) %>% 
+    select(away, away_score) %>% 
+    summarise(away_score = sum(away_score)) %>% 
+    pull()
+  
+  test['home_shots'] <- outcomes %>% 
+    filter(home == nhl_team) %>%
+    select(SF) %>% 
+    summarise(sf = sum(SF)) %>% 
+    pull()
+  
+  test['away_shots'] <- outcomes %>% 
+    filter(away == nhl_team) %>%
+    select(SA) %>% 
+    summarise(sa = sum(SA)) %>% 
+    pull()
+  
+  test['home_win'] <- outcomes %>% 
+    filter(home == nhl_team) %>%
+    select(home_win) %>% 
+    summarise(home_win = sum(home_win)) %>% 
+    pull()
+  
+  test['away_win'] <- outcomes %>% 
+    filter(away == nhl_team) %>%
+    select(away_win) %>% 
+    summarise(away_win = sum(away_win)) %>% 
+    pull()
+  
+  test['home_loss'] <- outcomes %>% 
+    filter(home == nhl_team) %>%
+    select(home_win) %>% 
+    filter(home_win == 0) %>% 
+    count(home_win, name = 'home_loss') %>% 
+    select(home_loss) %>% 
+    pull()
+  
+  test['away_loss'] <- outcomes %>% 
+    filter(away == nhl_team) %>%
+    select(away_win) %>% 
+    filter(away_win == 0) %>% 
+    count(away_win, name = 'away_loss') %>% 
+    select(away_loss) %>% 
+    pull()
+  
+  return(test)
+}
+```
+
+```{r}
+for (i in teams){
+  dataframe <- bind_rows(dataframe, every_year(outcomes = outcomes, nhl_team = i))
+}
+
+years <- dataframe[-1,]
+```
+
+
+```{r}
+season_start <- c('2011-09-01','2012-09-01','2013-09-01','2014-09-01','2015-09-01','2016-09-01','2017-09-01','2018-09-01','2019-09-01','2020-09-01', '2021-09-01')
+
+season_end <- c('2012-06-30', '2013-06-30', '2014-06-30', '2015-06-30', '2016-06-30', '2017-06-30', '2018-06-30', '2019-06-30', '2020-06-30', '2021-06-30', '2022-06-30')
+```
+
+```{r}
+seasons <- as_tibble(season_start) %>% 
+  rename(season_start = value) %>% 
+  mutate(season_end = season_end) 
+```
+
+```{r}
+chart <- tribble(~start, ~end, ~team, ~home_score, ~away_score, ~home_shots, ~away_shots, ~home_win, ~away_win, ~home_loss, ~away_loss, 'a', 'b', 'c', 1, 2, 3, 4, 5, 6, 7, 8)
+```
+
+```{r}
+teams_no_gk_k <- outcomes %>%
+  filter(date < '2015-01-10') %>% 
+  select(home) %>% 
+  distinct() %>% 
+  arrange(home) %>% 
+  pull()
+```
+
+```{r}
+by_years <- function(outcomes, nhl_team, start, end) {
+
+  test <- tribble(~start, ~end, ~team, ~home_score, ~away_score, ~home_shots, ~away_shots, ~home_win, ~away_win, ~home_loss, ~away_loss, 'a', 'b', 'c', 1, 2, 3, 4, 5, 6, 7, 8)
+  
+  test['start'] <- start
+  
+  test['end'] <- end
+  
+  test['team'] <- outcomes %>%
+    filter(date > start, date < end) %>% 
+    select(home) %>% 
+    distinct() %>% 
+    filter(home == nhl_team) %>% 
+    pull()
+  
+  test['home_score'] <- outcomes %>%
+    filter(date > start, date < end) %>% 
+    filter(home == nhl_team) %>% 
+    select(home, home_score) %>% 
+    summarise(home_score = sum(home_score)) %>% 
+    pull()
+  
+  test['away_score'] <- outcomes %>%
+    filter(date > start, date < end) %>% 
+    filter(away == nhl_team) %>% 
+    select(away, away_score) %>% 
+    summarise(away_score = sum(away_score)) %>% 
+    pull()
+  
+  test['home_shots'] <- outcomes %>%
+    filter(date > start, date < end) %>% 
+    filter(home == nhl_team) %>%
+    select(SF) %>% 
+    summarise(sf = sum(SF)) %>% 
+    pull()
+  
+  test['away_shots'] <- outcomes %>%
+    filter(date > start, date < end) %>% 
+    filter(away == nhl_team) %>%
+    select(SA) %>% 
+    summarise(sa = sum(SA)) %>% 
+    pull()
+  
+  test['home_win'] <- outcomes %>%
+    filter(date > start, date < end) %>% 
+    filter(home == nhl_team) %>%
+    select(home_win) %>% 
+    summarise(home_win = sum(home_win)) %>% 
+    pull()
+  
+  test['away_win'] <- outcomes %>%
+    filter(date > start, date < end) %>% 
+    filter(away == nhl_team) %>%
+    select(away_win) %>% 
+    summarise(away_win = sum(away_win)) %>% 
+    pull()
+  
+  test['home_loss'] <- outcomes %>%
+    filter(date > start, date < end) %>% 
+    filter(home == nhl_team) %>%
+    select(home_win) %>% 
+    filter(home_win == 0) %>% 
+    count(home_win, name = 'home_loss') %>% 
+    select(home_loss) %>% 
+    pull()
+  
+  test['away_loss'] <- outcomes %>%
+    filter(date > start, date < end) %>% 
+    filter(away == nhl_team) %>%
+    select(away_win) %>% 
+    filter(away_win == 0) %>% 
+    count(away_win, name = 'away_loss') %>% 
+    select(away_loss) %>% 
+    pull()
+  
+  return(test)
+}
+```
+
+```{r}
+for (i in teams_no_gk_k){
+  for (j in 1:nrow(seasons)){
+  chart <- bind_rows(chart, by_years(outcomes = outcomes, nhl_team = i, start = seasons$season_start[j], end = seasons$season_end[j]))}
+}
+```
+
+```{r}
+by_year <- chart[-1,]
+```
+
+```{r}
+for (i in 7:nrow(seasons)) {
+  by_year <- bind_rows(by_year, by_years(outcomes = outcomes, nhl_team = 'Golden Knights', start = seasons$season_start[i], end = seasons$season_end[i]))
+}
+```
+
+```{r}
+for (i in 11:nrow(seasons)) {
+  by_year <- bind_rows(by_year, by_years(outcomes = outcomes, nhl_team = 'Kraken', start = seasons$season_start[i], end = seasons$season_end[i]))
+}
+```
+
+
+```{r}
+by_year %>% 
+  saveRDS(file = '../data/by_year.rds')
+
+years %>% 
+  saveRDS(file = '../data/years.rds')
+```
+
