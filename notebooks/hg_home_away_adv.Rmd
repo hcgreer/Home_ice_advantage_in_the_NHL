@@ -28,12 +28,13 @@ outcomes_20_21 <- read_csv('../data/outcomes_20_21.csv', show_col_types = F)
 outcomes_21_22 <- read_csv('../data/outcomes_21_22.csv', show_col_types = F)
 
 ```
+
 function to clean the data
 ```{r}
 data_cleaning <- function(dataframe) {
   
   dataframe <- dataframe %>% 
-  select(Game) %>% 
+  select(Game, TOI, SF, SA, HDSF, HDSA, HDGF, HDGA, Attendance) %>% 
   separate(Game, c('date', 'game'), ' - ') %>% 
   separate(game, c('away', 'home'), ', ')
 
@@ -349,57 +350,15 @@ updating_elo <- updating_elo %>%
   mutate(season_start_elo_22_23 = .5 * season_end_elo_21_22 + 1000 * (1 - .5), season_end_elo_22_23 = season_start_elo_22_23)
 ```
 
+
 ```{r}
-outcomes_11_12 %>% 
-  saveRDS(file = '../data/outcomes_11_12.rds')
-
-outcomes_13 %>% 
-  saveRDS(file = '../data/outcomes_13.rds')
-
-outcomes_13_14 %>% 
-  saveRDS(file = '../data/outcomes_13_14.rds')
-
-outcomes_14_15 %>% 
-  saveRDS(file = '../data/outcomes_14_15.rds')
-
-outcomes_15_16 %>% 
-  saveRDS(file = '../data/outcomes_15_16.rds')
-
-outcomes_16_17 %>% 
-  saveRDS(file = '../data/outcomes_16_17.rds')
-
-outcomes_17_18 %>% 
-  saveRDS(file = '../data/outcomes_17_18.rds')
-
-outcomes_18_19 %>% 
-  saveRDS(file = '../data/outcomes_18_19.rds')
-
-outcomes_19_20 %>% 
-  saveRDS(file = '../data/outcomes_19_20.rds')
-
-outcomes_20_21 %>% 
-  saveRDS(file = '../data/outcomes_20_21.rds')
-
-outcomes_21_22 %>% 
-  saveRDS(file = '../data/outcomes_21_22.rds')
-
-updating_elo %>% 
-  saveRDS(file = '../data/updating_elo.rds')
+outcomes <- bind_rows(outcomes_11_12, outcomes_13, outcomes_13_14, outcomes_14_15, outcomes_15_16, outcomes_16_17, outcomes_17_18, outcomes_18_19, outcomes_19_20, outcomes_20_21, outcomes_21_22)
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+```{r}
+outcomes %>% 
+  saveRDS(file = '../data/outcomes.rds')
+```
 
 
 
