@@ -5,75 +5,49 @@ output: html_notebook
 
 ```{r}
 library(tidyverse)
-outcomes_21_22 <- readRDS(file = '../data/outcomes_21_22.rds')
-
-outcomes_20_21 <- readRDS(file = '../data/outcomes_20_21.rds')
-
-updating_elo <- readRDS(file = '../data/updating_elo.rds')
+outcomes <- readRDS(file = '../data/outcomes.rds')
 ```
 
 ```{r}
-outcomes_21_22 <- outcomes_21_22 %>% 
-  mutate(elo_diff = home_elo - away_elo, goal_diff = home_score - away_score)
+outcomes <- outcomes %>% 
+  mutate(elo_diff = home_elo - away_elo, goal_diff = home_score - away_score, audience = if_else(Attendance == 0, 1, 0))
 
-outcomes_20_21 <- outcomes_20_21 %>% 
-  mutate(elo_diff = home_elo - away_elo, goal_diff = home_score - away_score)
+outcomes_20_21 <- outcomes %>% 
+  filter(date > '2020-09-01', date < '2021-06-30')
 ```
 
 ```{r}
-outcomes_21_22 <- outcomes_21_22 %>% 
-  mutate(
-    matchup = case_when(
-      elo_diff > -50 & elo_diff < 50 ~ 'even',
-      elo_diff > 50 & elo_diff < 150 ~ 'slight_home_adv',
-      elo_diff < -50 & elo_diff > -150 ~ 'slight_away_adv',
-      elo_diff > 150 & elo_diff < 250 ~ 'home_adv',
-      elo_diff < -150 & elo_diff > -250 ~ 'away_adv',
-      elo_diff > 250 ~ 'big_home_adv',
-      elo_diff < -250 ~ 'big_away_adv'
-    )
-  )
+every_year_goal_diff <- lm(goal_diff ~ elo_diff, data = outcomes)
+
+summary(every_year_goal_diff)
 ```
 
 ```{r}
-outcomes_21_22 <- outcomes_21_22 %>% 
-  mutate(matchup = factor(matchup))
+every_year_home_percent <- glm(home_win ~ elo_diff, data = outcomes, family = 'binomial')
+
+summary(every_year_home_percent)
+```
+```{r}
+ever_year_home_percent_audience <- glm(home_win ~ elo_diff + audience, data = outcomes, family = 'binomial')
+
+summary(ever_year_home_percent_audience)
 ```
 
 ```{r}
-simple_regression_model <- lm(goal_diff ~ relevel(matchup, ref = 'even'), data = outcomes_21_22)
+year_20_21_goal_diff <- lm(goal_diff ~ elo_diff, data = outcomes_20_21)
 
-summary(simple_regression_model)
+summary(year_20_21_goal_diff)
 ```
 
 ```{r}
-outcomes_21_22 <- outcomes_21_22 %>% 
-  mutate(matchup = factor(elo_diff))
+year_20_21_home_percent <- glm(home_win ~ elo_diff, data = outcomes_20_21, family = 'binomial')
 
-
-simple_regression_model <- lm(goal_diff ~ elo_diff, data = outcomes_21_22)
-
-summary(simple_regression_model)
-```
-```{r}
-logistic_regression <- glm(home_win ~ elo_diff, data = outcomes_21_22, family = 'binomial')
-
-summary(logistic_regression)
+summary(year_20_21_home_percent)
 ```
 
 ```{r}
-outcomes_20_21 <- outcomes_20_21 %>% 
-  mutate(matchup = factor(elo_diff))
+year_20_21_home_percent_audience <- glm(home_win ~ elo_diff + audience, data = outcomes_20_21, family = 'binomial')
 
-
-simple_regression_model <- lm(goal_diff ~ elo_diff, data = outcomes_20_21)
-
-summary(simple_regression_model)
-```
-
-```{r}
-logistic_regression <- glm(home_win ~ elo_diff, data = outcomes_20_21, family = 'binomial')
-
-summary(logistic_regression)
+summary(year_20_21_home_percent_audience)
 ```
 
