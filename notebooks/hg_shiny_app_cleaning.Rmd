@@ -224,6 +224,26 @@ for (i in 11:nrow(seasons)) {
 }
 ```
 
+```{r}
+by_year$start <- str_sub(by_year$start, 3,4)
+
+by_year$end <- str_sub(by_year$end, 3,4)
+
+by_year$season <- str_c(by_year$start, '-', by_year$end)
+```
+
+```{r}
+years <- years %>% 
+  rename(home_goals = home_score, away_goals = away_score) %>% 
+  pivot_longer(!team, names_to = 'home_away', values_to = 'count')
+```
+
+```{r}
+by_year <- by_year %>% 
+  select(-start, -end) %>% 
+  rename(home_goals = home_score, away_goals = away_score) %>% 
+  pivot_longer(!c(team, season), names_to = 'home_away', values_to = 'count')
+```
 
 ```{r}
 by_year %>% 
