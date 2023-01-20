@@ -4,6 +4,18 @@ shinyUI(
       title = 'Home Ice Advantage in the NHL'
     ),
     dashboardSidebar(
+      sidebarMenu(
+        menuItem(
+          'Overall Stats',
+          tabName = 'overall_stats',
+          icon = icon('dashboard')
+        ),
+        menuItem(
+          'Elos',
+          tabName = 'elos',
+          icon = icon('th')
+        )
+      ),
       collapsibleradioButtonsInput(
         "season",
         "Select a NHL season",
@@ -18,26 +30,69 @@ shinyUI(
         teams_list,
         selected = 'Predators'
         ),
-      actionLink("selectall","Select All"),
-      radioButtons(
-        "stat",
-        "Select a NHL stat",
-        choices = c('Wins', 'Losses', 'Goals', 'Shots')
-      )
+      actionLink("selectall","Select All")
     ),
     dashboardBody(
-      box(fluidRow(
-        plotOutput('wins'))
+      tabItems(tabItem(
+        tabName = 'overall_stats',
+        h2(
+        fluidRow(
+        box(
+          title = 'Home Win Percentage',
+          status = 'primary',
+          solidHeader = T,
+          plotOutput('wins')
+        ),
+        box(
+          title = 'Away Win Percentage',
+          status = 'primary',
+          solidHeader = T,
+          plotOutput('losses')
+        )
       ),
-      box(fluidRow(
-        plotOutput('losses'))
-      ),
-      box(fluidRow(
-        plotOutput('goals'))
-      ),
-      box(fluidRow(
-        plotOutput('shots'))
-      ),
+      fluidRow(
+        box(
+          title = 'Goals',
+          status = 'primary',
+          solidHeader = T,
+          plotOutput('goals')
+        ),
+        box(
+          title = 'Shots',
+          status = 'primary',
+          solidHeader = T,
+          plotOutput('shots')
+        )
+      )
+      )),
+      tabItem(
+        tabName = 'elos',
+        h2(
+          fluidRow(
+            box(
+              title = 'Elo Over Time',
+              status = 'primary',
+              solidHeader = T,
+              plotOutput('elo')
+            )
+          ),
+          fluidRow(
+            box(
+              title = 'Elo Standings',
+              status = 'primary',
+              solidHeader = T,
+              dataTableOutput('end_elo')
+            ), 
+            box(
+              title = 'Actual Standings',
+              status = 'primary',
+              solidHeader = T,
+              dataTableOutput('standings')
+            )
+          )
+        )
+      )
+      )
     )
   )
 )
