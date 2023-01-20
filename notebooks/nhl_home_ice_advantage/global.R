@@ -7,6 +7,14 @@ by_year <- readRDS(file = 'data/by_year.rds')
 
 years <- readRDS(file = 'data/years.rds')
 
+elos <- readRDS(file = 'data/elos.rds')
+
+yearly_elo <- readRDS('data/updated_elos_longer.rds')
+
+end_elos<- readRDS(file = 'data/end_elos.rds')
+
+standings <- readRDS(file = 'data/standings.rds')
+
 teams_list <- c(by_year %>% pull(team) %>% unique() %>% sort())
 seasons_list <- c(by_year %>% pull(season) %>% unique() %>% sort())
 
